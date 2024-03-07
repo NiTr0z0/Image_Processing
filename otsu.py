@@ -12,21 +12,26 @@ def calc_hist(img):
 
   return hist
 
-def spec_variance(li,hist):
+def mean(li, hist):
   sum = n = 0
   for i in range(len(li)):
     sum += hist[li[i]] * li[i]
     n += hist[li[i]]
   
   u = sum / n
-  s = 0
+  return u
+
+def variance(li,hist):
+  u = mean(li, hist)
+  s = s1 = 0
   for i in range(len(li)):
     s += (hist[li[i]] * ((li[i] - u)**2))
-
-  var = (s / len(li))
+    s1 += hist[li[i]]
+  var = (s / s1)
 
   return var
 
+# miminising the intra - class variance
 
 def otsu_intra_class(img):
   hist = calc_hist(img)
@@ -34,7 +39,7 @@ def otsu_intra_class(img):
   minimum = None
   plt.bar(list(range(256)), hist)
   plt.show()
-  for i in range(1,255):
+  for i in range(0,255):
       t  =  i
       w1 = 0
       w2 = 0
@@ -52,7 +57,7 @@ def otsu_intra_class(img):
 
       R = list(range(t+1, 256))  
 
-      icv = (w1 * spec_variance(L,hist)) +  (w2 * spec_variance(R,hist))
+      icv = (w1 * variance(L,hist)) +  (w2 * variance(R,hist))
 
       if (minimum is None) or (icv < minimum):
         minimum = icv
@@ -75,12 +80,59 @@ def otsu_intra_class(img):
  
   plt.axis("off")
   plt.show()
-  print(t_optimal)
   return new_img
 
-book1 = cv2.imread("bluelock.jfif", 0)
-result1 = otsu_intra_class(book1)
-cv2.imwrite("result.jpeg", result1)
+
+def otsu_inter_class(img):
+  hist = calc_hist(img)
+  t_optimal = -1
+  maximum = None
+  plt.bar(list(range(256)), hist)
+  plt.show()
+  for i in range(0,255):
+      t  =  i
+      w1 = 0
+      w2 = 0
+      for i in range(t + 1):
+        w1 += hist[i]
+
+      w2 = sum(hist) - w1
+
+      w1 = w1 / sum(hist)
+
+      w2 = w2 / sum(hist)
+
+      L = list(range(0,t+1))
+
+      R = list(range(t+1, 256))  
+
+      icv = w1 * w2 * ((mean(L,hist) - mean(R,hist))**2)
+
+      if (maximum is None) or (icv > maximum):
+        maximum = icv
+        t_optimal = t
+
+
+  new_img = [[0]*len(img[0]) for i in range(len(img))]
+
+  for i in range(len(img)):
+    for j in range(len(img[0])):
+      if img[i][j] > t_optimal :
+        new_img[i][j] = 255
+
+      else:
+        new_img[i][j] = 0
+
+
+  new_img = np.array(new_img, dtype = "uint8")
+  plt.imshow(cv2.cvtColor(new_img, cv2.COLOR_BGR2RGB))
+ 
+  plt.axis("off")
+  plt.show()
+  return new_img
+
+
+
 
 
 
